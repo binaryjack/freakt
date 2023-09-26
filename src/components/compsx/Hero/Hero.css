@@ -1,0 +1,65 @@
+.css-element-0 {
+   //padding:0;
+   background: darker-background;
+}
+
+.css-element-1 {
+   height: 100px;
+   background: transparent;
+   //margin-top:0px;
+}
+
+.css-element-2 {
+   background: ;
+}
+
+.css-element-3 {
+   width: 100%;
+   align-items: flex-start;
+   padding-left: 20px;
+   padding-right: 20px;
+}
+
+.css-element-4 {
+   //background:"drawer-background";
+   //;
+}
+
+.css-element-5 {
+   overflow: hidden;
+   //background:yellow;
+   //position:absolute;
+   //top:is-mobile?"80px":is-tablet?"90px":"70px";
+   //bottom:is-mobile?"80px":is-tablet?"50px":"60px"flex-direction:column;
+}
+
+.css-element-6 {
+   height: 100%;
+   flex-direction: is-mobile?column:row;
+}
+
+.css-element-7 {
+   top: unset;
+   height: 90px;
+   left: -70px;
+   bottom: -30px;
+}
+
+.css-element-8 {
+   height: 100%;
+   margin-top: is-mobile?-20px:0px;
+}
+
+.css-element-9 {
+   opacity: 0;
+   mix-blend-mode: lighten;
+}
+
+.css-element-10 {
+   top: 0;
+   justify-content: left;
+   //padding:20px;
+   height: 100%;
+   margin-top: !is-mobile?0:-200px;
+   margin-left: !is-mobile?-500px:;
+}

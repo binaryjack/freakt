@@ -1,3 +1,5 @@
+import './Hero.css'
+
 /** @jsxImportSource theme-ui */
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -40,14 +42,7 @@ const CarsSection = ({ id }: ICarsSectionProps): React.JSX.Element => {
     const { StandardParagraph, DescriptionParagraph } = useText()
 
     return (
-        <SectionWrapper
-            id={id}
-            name={'cars'}
-            sxFrame={{
-                // padding: 0,
-                background: 'darkerBackground',
-            }}
-        >
+        <SectionWrapper id={id} name={'cars'} className="css-element-0">
             <InterSection height={'50px'} background={'darkBackground'} />
             <Divider
                 type="triangle"
@@ -58,14 +53,7 @@ const CarsSection = ({ id }: ICarsSectionProps): React.JSX.Element => {
                 offsetV={['0px', '0px', '0px', '0px', '0px', '0px']}
             />
 
-            <HeadingContainer
-                id={'carsSection'}
-                sxContainerStyle={{
-                    height: '100px',
-                    background: 'transparent',
-                    // marginTop: '0px'
-                }}
-            >
+            <HeadingContainer id={'carsSection'} className="css-element-1">
                 {Title(
                     `${cars.data.label}`,
                     cars.data.label,
@@ -79,31 +67,9 @@ const CarsSection = ({ id }: ICarsSectionProps): React.JSX.Element => {
             >
                 <RowFrame
                     heights={['320px', '400px', '420px']}
-                    sxStyle={{
-                        background: '',
-                    }}
+                    className="css-element-2"
                 >
-                    <Col
-                        span={12}
-                        sxStyle={{
-                            width: '100%',
-                            alignItems: 'flex-start',
-                            paddingLeft: [
-                                '20px',
-                                '20px',
-                                '85px',
-                                '90px',
-                                '110px',
-                            ],
-                            paddingRight: [
-                                '20px',
-                                '20px',
-                                '30px',
-                                '75px',
-                                '90px',
-                            ],
-                        }}
-                    >
+                    <Col span={12} className="css-element-3">
                         {StandardParagraph('carsSection2Text', cars.data.text)}
                     </Col>
                     <Divider
@@ -118,9 +84,7 @@ const CarsSection = ({ id }: ICarsSectionProps): React.JSX.Element => {
             {/* <Container options={{ direction: "column" }}>
                 <Row
                 height="150px"
-                // sxStyle={{
-                //   background: "drawerBackground",
-                // }}
+                //className='css-element-4'
                 >
                 {/* <Divider
                     type="slant"
@@ -156,14 +120,7 @@ const CarsSection = ({ id }: ICarsSectionProps): React.JSX.Element => {
                                 '450px',
                                 '500px',
                             ]}
-                            sxStyle={{
-                                overflow: 'hidden',
-                                //background: ['yellow', 'green', 'red', 'beige', 'blue', 'vermillon'],
-                                //    position:'absolute',
-                                // top: isMobile ? "80px" : isTablet ? "90px" : "70px",
-                                // bottom: isMobile ? "80px" : isTablet ? "50px" : "60px"
-                                flexDirection: 'column',
-                            }}
+                            className="css-element-5"
                         >
                             <Divider
                                 type="slant"
@@ -178,12 +135,7 @@ const CarsSection = ({ id }: ICarsSectionProps): React.JSX.Element => {
                                 img={row.img}
                             />
 
-                            <RowFrame
-                                sxStyle={{
-                                    height: '100%',
-                                    flexDirection: isMobile ? 'column' : 'row',
-                                }}
-                            >
+                            <RowFrame className="css-element-6">
                                 <ColumnTop span={isMobile ? 12 : 11}>
                                     <CarCost
                                         id={`row-cost-${row.img}-${row.id}`}
@@ -219,35 +171,13 @@ const CarsSection = ({ id }: ICarsSectionProps): React.JSX.Element => {
                                         ]}
                                         id={row.id}
                                         row={row}
-                                        sxSlideBoxStyle={{
-                                            top: 'unset',
-                                            height: '90px',
-                                            left: [
-                                                '-70px',
-                                                '-100px',
-                                                '-20px',
-                                                '-80px',
-                                                '-90px',
-                                                '-130px',
-                                            ],
-                                            bottom: [
-                                                '-30px',
-                                                '-20px',
-                                                '10px',
-                                                '30px',
-                                                '40px',
-                                                '80px',
-                                            ],
-                                        }}
+                                        className="css-element-7"
                                     />
                                 </ColumnTop>
 
                                 <ColumnTop
                                     span={isMobile ? 12 : 11}
-                                    sxStyle={{
-                                        height: '100%',
-                                        marginTop: isMobile ? '-20px' : '0px',
-                                    }}
+                                    className="css-element-8"
                                 >
                                     {DescriptionParagraph(
                                         'social.data.text',
@@ -277,18 +207,8 @@ const CarsSection = ({ id }: ICarsSectionProps): React.JSX.Element => {
 
             {/* <BackgroundImage
                 srcImage={autumnRoad}
-                sxFrameStyle={{
-                    opacity: 0,
-                    mixBlendMode: 'lighten',
-                }}
-                sxImgStyle={{
-                    top: 0,
-                    justifyContent: 'left',
-                    // padding: '20px',
-                    height: '100%',
-                    marginTop: !isMobile ? '0' : '-200px',
-                    marginLeft: !isMobile ? '-500px' : '',
-                }}
+               className='css-element-9'
+               className='css-element-10'
             /> */}
         </SectionWrapper>
     )
