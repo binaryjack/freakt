@@ -30,11 +30,10 @@ const extractSxStylesFromfile = (path, inputTsx) => {
             for (let a of arrays) {
                 const valuePrint = a.split(':')[1]
 
-                const cleannedArray = a
-                    .replace(/\r*\n*\s*/gm, '')
-                    .replace(/\[/gm, '')
-                    .replace(/\]/gm, '')
-                    .replace(/\'/gm, '')
+                const cleannedArray = a.replace(/\r*\n*\s*\[\]\'/gm, '')
+                // .replace(/\[/gm, '')
+                // .replace(/\]/gm, '')
+                // .replace(/\'/gm, '')
 
                 const propertyParts = cleannedArray.split(':')
                 const propertyBreakPointsValues = propertyParts[1].split(',')

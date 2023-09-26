@@ -75,14 +75,12 @@ figlet(coms.applicationTitle, 'Standard', function (err, title) {
         console.log(chalk.yellowBright('Processes:'))
         console.log(
             chalk.yellowBright(
-                " - build: 'Dependency Database' creates the dependency database of the current project. as long as the projects has a src folder."
+                " - cc:  create component : -p cc -n ComponentName -s 'id:number, name:string' \r\n",
+                ' - cfi:  create from interface : -p cfi -i filName\r\n',
+                ' - sxToCss:  convert sx to css : -n file name\r\n'
             )
         )
-        console.log(
-            chalk.yellowBright(
-                " - output: creates a '/versions' folder with two files: 'dependencies.json': the dependency tree database / 'raw_files': files reference database,' ."
-            )
-        )
+        console.log(chalk.yellowBright(' - .'))
     }
     if (argv.s === 'cc' || argv.process === 'cc') {
         const fileName = argv.n || argv.name
