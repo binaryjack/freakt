@@ -5,7 +5,9 @@ import boxen from 'boxen'
 import yargs from 'yargs/yargs'
 
 import settings from '../src/settings.js'
-import createFunctionalComponent from '../src/methods.js'
+import createFunctionalComponent from '../src/methodNewComponent.js'
+import createFunctionalComponentFromInterface from '../src/methodNewComponentFromInterface.js'
+import sxToCss from '../src/methodSxToCss.js'
 
 import figlet from 'figlet'
 
@@ -48,7 +50,13 @@ figlet(coms.applicationTitle, 'Standard', function (err, title) {
             type: commands.s.type,
             demandOption: commands.s.demandOption,
         })
-
+        .options(commands.i.name, {
+            alias: commands.i.alias,
+            describe: commands.i.describe,
+            default: commands.i.default,
+            type: commands.i.type,
+            demandOption: commands.i.demandOption,
+        })
         .demandOption(['process'], 'Please provide a process to execute')
         .help().argv
 
@@ -84,5 +92,24 @@ figlet(coms.applicationTitle, 'Standard', function (err, title) {
         }
         const props = argv.s || argv.propsName
         createFunctionalComponent(currentExecturingDir, fileName, props)
+    }
+    if (argv.s === 'cfi' || argv.process === 'cfi') {
+        const interfaceName = argv.i || argv.interfaceName
+        if (!interfaceName) {
+            console.error('please provide an interface name')
+            return
+        }
+        createFunctionalComponentFromInterface(
+            currentExecturingDir,
+            interfaceName
+        )
+    }
+    if (argv.s === 'sxToCss' || argv.process === 'sxToCss') {
+        const fileName = argv.n || argv.name
+        if (!fileName) {
+            console.error('please provide a file name')
+            return
+        }
+        sxToCss(currentExecturingDir, fileName)
     }
 })
