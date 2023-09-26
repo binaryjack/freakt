@@ -44,8 +44,8 @@ const settings = () => {
                 default: '',
                 demandOption: true,
             },
-            pn: {
-                name: 'pn',
+            s: {
+                name: 's',
                 alias: 'propsName',
                 describe: 'Props',
                 help: '',

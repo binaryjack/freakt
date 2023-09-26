@@ -41,12 +41,12 @@ figlet(coms.applicationTitle, 'Standard', function (err, title) {
             type: commands.n.type,
             demandOption: commands.n.demandOption,
         })
-        .options(commands.pn.name, {
-            alias: commands.pn.alias,
-            describe: commands.pn.describe,
-            default: commands.pn.default,
-            type: commands.pn.type,
-            demandOption: commands.pn.demandOption,
+        .options(commands.s.name, {
+            alias: commands.s.alias,
+            describe: commands.s.describe,
+            default: commands.s.default,
+            type: commands.s.type,
+            demandOption: commands.s.demandOption,
         })
 
         .demandOption(['process'], 'Please provide a process to execute')
@@ -76,13 +76,13 @@ figlet(coms.applicationTitle, 'Standard', function (err, title) {
             )
         )
     }
-    if (argv.p === 'cc' || argv.process === 'cc') {
+    if (argv.s === 'cc' || argv.process === 'cc') {
         const fileName = argv.n || argv.name
         if (!fileName) {
             console.log('Please provide a file name')
             return
         }
-        const props = argv.pn || argv.propsName
+        const props = argv.s || argv.propsName
         createFunctionalComponent(currentExecturingDir, fileName, props)
     }
 })

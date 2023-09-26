@@ -17,15 +17,39 @@ const getAllFiles = (directory, files = []) => {
     return files
 }
 
-const jsxModel = (name, nameLc, propsArgs) => `
+const getPropsSections = (props) => {
+    let propAndTypeList = []
+    let namesOnliList = []
+    if (props.includes(',')) {
+        propAndTypeList = props.split(',')
+    } else {
+        propAndTypeList.push(props)
+    }
+    for (let p of propAndTypeList) {
+        if (p.includes(':')) {
+            const propName = p.split(':')
+            namesOnliList.push(propName[0])
+        } else {
+            namesOnliList.push(p)
+        }
+    }
+    return {
+        propAndTypeList,
+        namesOnliList,
+        propAndTypeListString: propAndTypeList.join('\r\n'),
+        namesOnliListString: namesOnliList.join(',\r\n'),
+    }
+}
+
+const jsxModel = (name, nameLc, interfaceProps, destructuredList) => `
 import 
 import './${name}.css'
 
 interface I${name} {
-    ${propsArgs}
+    ${interfaceProps}
 } 
 
-const ${name} = ({${propsArgs}}: I${name}): React.JSX.Element => {
+const ${name} = ({${destructuredList}}: I${name}): React.JSX.Element => {
     return <div className={\`${nameLc}\`}>
     </div>
 }
@@ -53,6 +77,9 @@ const createFunctionalComponent = (path, fileName, props) => {
         .substring(0, 1)
         .toLowerCase()}${fileName.substring(1)}`
 
+    const { namesOnliListString, propAndTypeListString } =
+        getPropsSections(props)
+
     const componentDirectoyName = lcName
     const fulldirectory = `${path}\\${componentDirectoyName}`
 
@@ -65,7 +92,12 @@ const createFunctionalComponent = (path, fileName, props) => {
 
     const neaStyleFile = styleFile(lcName)
 
-    const newJsx = jsxModel(ucName, lcName, props)
+    const newJsx = jsxModel(
+        ucName,
+        lcName,
+        propAndTypeListString,
+        namesOnliListString
+    )
 
     fs.writeFileSync(componentFileFullName, newJsx, 'utf-8')
     fs.writeFileSync(styleFileFullName, neaStyleFile, 'utf-8')
