@@ -10,6 +10,54 @@ import {
 } from './patterns.js'
 import * as prettier from 'prettier'
 
+const getPropertyParts = (propertyRaw) =>
+    propertyRaw.split(':').map((o) => o.trim())
+
+const getPropertyName = (propertyParts) => propertyParts[0].trim()
+
+const getPropertyValue = (propertyParts, idx) => propertyParts[idx].trim()
+
+const getMissingProperty = (propertyParts) =>
+    !propertValue ? 'MISSING_VALUE' : propertyParts
+
+const dashingCase = (property) =>
+    property.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase())
+
+const uncomment = (name) => {
+    if (name.startsWith('//')) {
+        return name.replace(/\/{2}/, '')
+    }
+    return name
+}
+
+const cleanSpreadedObject = (name) => {
+    if (propertyName.startsWith('...')) {
+        return `/*${propertyName}*/`
+    }
+    return name
+}
+
+const cleanOneParenthesised = (name) => {
+    if (name.endsWith(')') && !name.includes('(')) {
+        return name.replace(')', '')
+    }
+    return name
+}
+
+const cleanTernaryOperation = (name) => {
+    if (name.includes('?') && name.includes(':')) {
+        return `/*${propertyName}*/`
+    }
+    return name
+}
+
+const cleanImageVariablesSrc = (name) => {
+    if (propTemp.includes('url') && propTemp.includes('$')) {
+        return `/*${propTemp}*/`
+    }
+    return name
+}
+
 const extractSxStylesFromfile = (path, inputTsx) => {
     const interfacesFileFullName = `${path}\\${inputTsx}`
 
@@ -41,9 +89,8 @@ const extractSxStylesFromfile = (path, inputTsx) => {
                     .replace(/\'/gm, '')
                     .replace(/\"/gm, '')
 
-                const propertyParts = cleannedArray
-                    .split(':')
-                    .map((o) => o.trim())
+                const propertyParts = getPropertyParts(cleannedArray)
+
                 const propertyBreakPointsValues = propertyParts[1].split(',')
 
                 currentSx = currentSx.replace(
@@ -51,43 +98,34 @@ const extractSxStylesFromfile = (path, inputTsx) => {
                     propertyBreakPointsValues[0]
                 )
 
-                let propertyName = propertyParts[0].trim()
-                if (propertyName.startsWith('//')) {
-                    propertyName = propertyName.replace(/\/{2}/, '')
-                }
+                let propertyName = getPropertyName(propertyParts)
 
-                if (propertyName.startsWith('...')) {
-                    propertyName = `/*${propertyName}*/`
-                }
+                propertyName = uncomment(propertyName)
+                propertyName = cleanSpreadedObject(propertyName)
+                propertyName = dashingCase(propertyName)
 
-                propertyName = propertyName.replace(
-                    /[A-Z]/g,
-                    (m) => '-' + m.toLowerCase()
+                let propertValue = getPropertyValue(
+                    propertyBreakPointsValues,
+                    i
                 )
+                propertValue = cleanOneParenthesised(propertValue)
+                propertValue = cleanTernaryOperation(propertValue)
+                propertValue = getMissingProperty(propertValue)
 
-                let propertValue = propertyBreakPointsValues[i].trim()
-                if (propertValue.endsWith(')') && !propertValue.includes('(')) {
-                    propertValue = propertValue.replace(')', '')
-                }
+                propertValue = cleanSpreadedObject(propertValue)
 
-                if (['?', ':'].includes(propertValue)) {
-                    propertValue = propertValue.split(':')[1]
-                }
+                const outputProperty = `${propertyName}:${propertValue}${
+                    !propertValue.includes(';') ? ';' : ''
+                }`
 
-                if (!propertValue) {
-                    propertValue = 'MISSING_VALUE'
-                }
-
-                if (propertValue.startsWith('...')) {
-                    propertValue = `/*${propertValue}*/`
-                }
+                console.log(propertyName, propertValue)
 
                 for (let i = 1; i < propertyBreakPointsValues.length; i++) {
                     responsiveBreakPoints.push({
                         belongsTo: elementCssClassName,
                         propertyName: propertyName,
                         propertyValue: propertValue,
-                        propertyFull: `${propertyName}:${propertValue};`,
+                        propertyFull: outputProperty,
                         breakPoint: `${i}00`,
                     })
                 }
@@ -102,8 +140,9 @@ const extractSxStylesFromfile = (path, inputTsx) => {
             .replace(/\r*\n*/gm, '')
             .replace('}}', '')
             .replace(/'/gm, '')
+            .replace(/"/gm, '')
 
-        flatten = flatten.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase())
+        flatten = dashingCase(flatten)
 
         const splittedProperties = flatten
             .split(',')
@@ -112,16 +151,39 @@ const extractSxStylesFromfile = (path, inputTsx) => {
 
         const outSplittedProperties = []
         for (let property of splittedProperties) {
-            let propTemp = property
-            if (propTemp.startsWith('//')) {
-                propTemp = propTemp.replace(/\/{2}/, '')
+            let propTemp = property.trim()
+
+            if (!propTemp) {
+                continue
             }
+            const parts = getPropertyParts(propTemp)
+            let pName = getPropertyName(parts)
+            let pValue = getPropertyValue(parts)
+
+            pName = uncomment(pName)
+            pName = cleanSpreadedObject(pName)
+            pName = cleanOneParenthesised(pName)
+            pName = cleanTernaryOperation(pName)
+            pName = cleanImageVariablesSrc(pName)
+
+            pValue = uncomment(pValue)
+            pValue = cleanSpreadedObject(pValue)
+            pValue = cleanOneParenthesised(pValue)
+            pValue = cleanTernaryOperation(pValue)
+            pValue = cleanImageVariablesSrc(pValue)
+
+            propTemp = `${pName}:${pValue}`
+
+            if (propTemp.length > 1 && !propTemp.endsWith(';')) {
+                propTemp = `${propTemp};`
+            }
+
             outSplittedProperties.push(propTemp)
         }
 
         const reTemp = {
             originalPrint: sx,
-            cssVersion: `${outSplittedProperties.join(';\r\n')};`,
+            cssVersion: `${outSplittedProperties.join('\r\n')}`,
             cssName: elementCssClassName,
         }
 
@@ -151,15 +213,15 @@ const sxToCss = async (path, inputTsx, configPrettier) => {
     }
 
     const componentContent = `
-import './${fileNameAndExtention[0]}.css'
+    import './${fileNameAndExtention[0]}.css'
 
-${content}
-`
+    ${content}
+    `
     let styleContent = templateReplacers
         .map((o) => {
             return `.${o.cssName} {
-   ${o.cssVersion}
-}`
+    ${o.cssVersion}
+    }`
         })
         .join('\r\n\r\n')
 
