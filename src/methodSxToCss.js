@@ -21,10 +21,12 @@ const extractSxStylesFromfile = (path, inputTsx) => {
     let idx = 0
     let arrayIdx = 0
 
+    const elementNameOnly = toLcName(inputTsx).split('.')[0]
+
     const responsiveBreakPoints = []
 
     for (let sx of sxSections) {
-        const elementCssClassName = `css-element-${idx}`
+        const elementCssClassName = `${elementNameOnly}-element-${idx}`
         let currentSx = sx
         const arrays = currentSx.match(matchArrays)
 
@@ -33,12 +35,15 @@ const extractSxStylesFromfile = (path, inputTsx) => {
                 const valuePrint = a.split(':')[1]
 
                 const cleannedArray = a
-                    .replace(/\r*\n*\s*/gm, '')
+                    .replace(/\r*\n*/gm, '')
                     .replace(/\[/gm, '')
                     .replace(/\]/gm, '')
                     .replace(/\'/gm, '')
+                    .replace(/\"/gm, '')
 
-                const propertyParts = cleannedArray.split(':')
+                const propertyParts = cleannedArray
+                    .split(':')
+                    .map((o) => o.trim())
                 const propertyBreakPointsValues = propertyParts[1].split(',')
 
                 currentSx = currentSx.replace(
@@ -51,17 +56,38 @@ const extractSxStylesFromfile = (path, inputTsx) => {
                     propertyName = propertyName.replace(/\/{2}/, '')
                 }
 
+                if (propertyName.startsWith('...')) {
+                    propertyName = `/*${propertyName}*/`
+                }
+
                 propertyName = propertyName.replace(
                     /[A-Z]/g,
                     (m) => '-' + m.toLowerCase()
                 )
 
+                let propertValue = propertyBreakPointsValues[i].trim()
+                if (propertValue.endsWith(')') && !propertValue.includes('(')) {
+                    propertValue = propertValue.replace(')', '')
+                }
+
+                if (['?', ':'].includes(propertValue)) {
+                    propertValue = propertValue.split(':')[1]
+                }
+
+                if (!propertValue) {
+                    propertValue = 'MISSING_VALUE'
+                }
+
+                if (propertValue.startsWith('...')) {
+                    propertValue = `/*${propertValue}*/`
+                }
+
                 for (let i = 1; i < propertyBreakPointsValues.length; i++) {
                     responsiveBreakPoints.push({
                         belongsTo: elementCssClassName,
                         propertyName: propertyName,
-                        propertyValue: propertyBreakPointsValues[i],
-                        propertyFull: `${propertyName}:${propertyBreakPointsValues[i]};`,
+                        propertyValue: propertValue,
+                        propertyFull: `${propertyName}:${propertValue};`,
                         breakPoint: `${i}00`,
                     })
                 }
@@ -73,13 +99,16 @@ const extractSxStylesFromfile = (path, inputTsx) => {
                 /\s[style|sx|sxStyle|sxContainerStyle|sxFrame|sxSlideBoxStyle|sxImgStyle]*={{/gm,
                 ''
             )
-            .replace(/\r*\n*\s*/gm, '')
+            .replace(/\r*\n*/gm, '')
             .replace('}}', '')
             .replace(/'/gm, '')
 
         flatten = flatten.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase())
 
-        const splittedProperties = flatten.split(',').filter((o) => o !== '')
+        const splittedProperties = flatten
+            .split(',')
+            .filter((o) => o !== '')
+            .map((o) => o.trim())
 
         const outSplittedProperties = []
         for (let property of splittedProperties) {
@@ -98,7 +127,7 @@ const extractSxStylesFromfile = (path, inputTsx) => {
 
         templateReplacers.push(reTemp)
 
-        content = content.replace(sx, `className='${reTemp.cssName}'`)
+        content = content.replace(sx, ` className='${reTemp.cssName}'`)
         idx++
     }
 

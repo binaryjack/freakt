@@ -12,7 +12,7 @@ const getAllFiles = (directory, files = []) => {
         if (fs.statSync(absolute).isDirectory()) {
             getAllFiles(absolute, files)
         } else {
-            if (!file.endsWith('.tsx')) continue
+            if (!file.endsWith('.tsx') || file.startsWith('use')) continue
             files.push({
                 path: directory,
                 file: file,
@@ -27,7 +27,6 @@ const fullSxToCss = (path, configFile) => {
     for (let f of files) {
         if (f.file.toString().endsWith('.tsx')) {
             console.log(f)
-
             sxToCss(f.path, f.file, configFile)
         }
     }
