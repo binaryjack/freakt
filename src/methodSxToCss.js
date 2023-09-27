@@ -8,6 +8,8 @@ import {
     matchTags,
     matchArrays,
 } from './patterns.js'
+import * as prettier from 'prettier'
+
 const extractSxStylesFromfile = (path, inputTsx) => {
     const interfacesFileFullName = `${path}\\${inputTsx}`
 
@@ -30,10 +32,11 @@ const extractSxStylesFromfile = (path, inputTsx) => {
             for (let a of arrays) {
                 const valuePrint = a.split(':')[1]
 
-                const cleannedArray = a.replace(/\r*\n*\s*\[\]\'/gm, '')
-                // .replace(/\[/gm, '')
-                // .replace(/\]/gm, '')
-                // .replace(/\'/gm, '')
+                const cleannedArray = a
+                    .replace(/\r*\n*\s*/gm, '')
+                    .replace(/\[/gm, '')
+                    .replace(/\]/gm, '')
+                    .replace(/\'/gm, '')
 
                 const propertyParts = cleannedArray.split(':')
                 const propertyBreakPointsValues = propertyParts[1].split(',')
@@ -43,10 +46,23 @@ const extractSxStylesFromfile = (path, inputTsx) => {
                     propertyBreakPointsValues[0]
                 )
 
+                let propertyName = propertyParts[0].trim()
+                if (propertyName.startsWith('//')) {
+                    propertyName = propertyName.replace(/\/{2}/, '')
+                }
+
+                propertyName = propertyName.replace(
+                    /[A-Z]/g,
+                    (m) => '-' + m.toLowerCase()
+                )
+
                 for (let i = 1; i < propertyBreakPointsValues.length; i++) {
                     responsiveBreakPoints.push({
                         belongsTo: elementCssClassName,
-                        property: `${propertyParts[0]}:${propertyBreakPointsValues[i]};`,
+                        propertyName: propertyName,
+                        propertyValue: propertyBreakPointsValues[i],
+                        propertyFull: `${propertyName}:${propertyBreakPointsValues[i]};`,
+                        breakPoint: `${i}00`,
                     })
                 }
             }
@@ -65,9 +81,18 @@ const extractSxStylesFromfile = (path, inputTsx) => {
 
         const splittedProperties = flatten.split(',').filter((o) => o !== '')
 
+        const outSplittedProperties = []
+        for (let property of splittedProperties) {
+            let propTemp = property
+            if (propTemp.startsWith('//')) {
+                propTemp = propTemp.replace(/\/{2}/, '')
+            }
+            outSplittedProperties.push(propTemp)
+        }
+
         const reTemp = {
             originalPrint: sx,
-            cssVersion: `${splittedProperties.join(';\r\n')};`,
+            cssVersion: `${outSplittedProperties.join(';\r\n')};`,
             cssName: elementCssClassName,
         }
 
@@ -80,7 +105,7 @@ const extractSxStylesFromfile = (path, inputTsx) => {
     return { content, responsiveBreakPoints, templateReplacers, result: true }
 }
 
-const sxToCss = (path, inputTsx) => {
+const sxToCss = async (path, inputTsx, configPrettier) => {
     const { content, templateReplacers, responsiveBreakPoints, result } =
         extractSxStylesFromfile(path, inputTsx)
 
@@ -111,18 +136,78 @@ ${content}
 
     //@media screen and (min-width: ${i.toString()}00px) {
 
-    const akNames = new Set([...responsiveBreakPoints.map((o) => o.belongsTo)])
+    const classNames = new Set([
+        ...responsiveBreakPoints.map((o) => o.belongsTo),
+    ])
+    const propertyNames = new Set([
+        ...responsiveBreakPoints.map((o) => o.propertyName),
+    ])
 
-    const outputInter = []
+    const breakPoints = []
 
-    for (let r of akNames) {
-        const rules = responsiveBreakPoints
-            .filter((o) => o.belongsTo === r)
-            ?.map((o) => o.property)
-        if (rules.length === 0) continue
+    for (let className of classNames) {
+        const cnp = responsiveBreakPoints.filter(
+            (o) => o.belongsTo === className
+        )
 
-        const curretR = outputInter.find((o) => o)
+        for (let propertyName of propertyNames) {
+            const properties = cnp.filter(
+                (o) => o.propertyName === propertyName
+            )
+
+            for (let property of properties) {
+                const cbp = breakPoints.find(
+                    (o) => o.breakPoint === property.breakPoint
+                )
+                if (!cbp) {
+                    breakPoints.push({
+                        breakPoint: property.breakPoint,
+                        properties: [property],
+                    })
+                } else {
+                    cbp.properties.push(property)
+                }
+            }
+        }
     }
+    //
+    let outputPropertiesCss = []
+    const outputBreakPointCss = []
+
+    for (let bp of breakPoints) {
+        for (let cn of classNames) {
+            const breakPointProperties = bp.properties.filter(
+                (o) => o.belongsTo === cn
+            )
+            if (breakPointProperties.length === 0) continue
+            outputPropertiesCss.push(`
+               .${cn} {
+                    ${breakPointProperties
+                        .map((o) => o.propertyFull)
+                        .join('\r\n')}
+                }`)
+        }
+        outputBreakPointCss.push(`
+        @media screen and (min-width: ${bp.breakPoint}px) {
+            ${outputPropertiesCss.join('\r\n')}
+        }`)
+
+        outputPropertiesCss = []
+    }
+
+    styleContent = `
+    ${styleContent}
+    ${outputBreakPointCss.join('\r\n')}
+    `
+
+    // const formattedComponentContent = await prettier.format(componentContent, {
+    //     ...configPrettier,
+    //     parser: 'typescript',
+    // })
+    // const formattedStyle = await prettier.format(styleContent, {
+    //     ...configPrettier,
+    //     parser: 'css',
+    // })
 
     fs.writeFileSync(destComponentFullName, componentContent, 'utf-8')
     fs.writeFileSync(destStyleFullName, styleContent, 'utf-8')

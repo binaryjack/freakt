@@ -8,8 +8,13 @@ import settings from '../src/settings.js'
 import createFunctionalComponent from '../src/methodNewComponent.js'
 import createFunctionalComponentFromInterface from '../src/methodNewComponentFromInterface.js'
 import sxToCss from '../src/methodSxToCss.js'
+import fullSxToCss from '../src/methodFullSxToCss.js'
+
+import * as prettier from 'prettier'
 
 import figlet from 'figlet'
+
+const configFile = await prettier.resolveConfigFile('../.prettierrc')
 
 const { coms } = settings()
 
@@ -82,7 +87,8 @@ figlet(coms.applicationTitle, 'Standard', function (err, title) {
         )
         console.log(chalk.yellowBright(' - .'))
     }
-    if (argv.s === 'cc' || argv.process === 'cc') {
+
+    if (argv.p === 'cc' || argv.process === 'cc') {
         const fileName = argv.n || argv.name
         if (!fileName) {
             console.log('Please provide a file name')
@@ -91,7 +97,8 @@ figlet(coms.applicationTitle, 'Standard', function (err, title) {
         const props = argv.s || argv.propsName
         createFunctionalComponent(currentExecturingDir, fileName, props)
     }
-    if (argv.s === 'cfi' || argv.process === 'cfi') {
+
+    if (argv.p === 'cfi' || argv.process === 'cfi') {
         const interfaceName = argv.i || argv.interfaceName
         if (!interfaceName) {
             console.error('please provide an interface name')
@@ -102,12 +109,17 @@ figlet(coms.applicationTitle, 'Standard', function (err, title) {
             interfaceName
         )
     }
-    if (argv.s === 'sxToCss' || argv.process === 'sxToCss') {
+
+    if (argv.p === 'sxToCss' || argv.process === 'sxToCss') {
         const fileName = argv.n || argv.name
         if (!fileName) {
             console.error('please provide a file name')
             return
         }
-        sxToCss(currentExecturingDir, fileName)
+        sxToCss(currentExecturingDir, fileName, configFile)
+    }
+
+    if (argv.p === 'fullSxToCss' || argv.process === 'fullSxToCss') {
+        fullSxToCss(currentExecturingDir, configFile)
     }
 })
