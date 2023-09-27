@@ -10,52 +10,54 @@ import {
 } from './patterns.js'
 import * as prettier from 'prettier'
 
-const getPropertyParts = (propertyRaw) =>
-    propertyRaw.split(':').map((o) => o.trim())
+const getPropertyParts = (propValue) =>
+    propValue.split(':').map((o) => o?.trim())
 
-const getPropertyName = (propertyParts) => propertyParts[0].trim()
+const getPropertyName = (propValue) =>
+    propValue && propValue.length > 0 ? propValue[0]?.trim() : ''
 
-const getPropertyValue = (propertyParts, idx) => propertyParts[idx].trim()
+const getPropertyValue = (propValue, idx = 1) =>
+    propValue && propValue.length > 0 ? propValue[idx]?.trim() : ''
 
-const getMissingProperty = (propertyParts) =>
-    !propertValue ? 'MISSING_VALUE' : propertyParts
+const getMissingProperty = (propValue) =>
+    !propValue ? 'MISSING_VALUE' : propValue
 
-const dashingCase = (property) =>
-    property.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase())
+const dashingCase = (propValue) =>
+    propValue?.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase())
 
-const uncomment = (name) => {
-    if (name.startsWith('//')) {
-        return name.replace(/\/{2}/, '')
+const uncomment = (propValue) => {
+    if (propValue?.startsWith('//')) {
+        return propValue.replace(/\/{2}/, '')
     }
-    return name
+    return propValue
 }
 
-const cleanSpreadedObject = (name) => {
-    if (propertyName.startsWith('...')) {
-        return `/*${propertyName}*/`
+const cleanSpreadedObject = (propValue) => {
+    if (propValue?.startsWith('...')) {
+        return `/*${propValue}*/`
     }
-    return name
+    return propValue
 }
 
-const cleanOneParenthesised = (name) => {
-    if (name.endsWith(')') && !name.includes('(')) {
-        return name.replace(')', '')
+const cleanOneParenthesised = (propValue) => {
+    if (propValue?.endsWith(')') && !propValue?.includes('(')) {
+        return propValue.replace(')', '')
     }
-    return name
+    return propValue
 }
 
-const cleanTernaryOperation = (name) => {
-    if (name.includes('?') && name.includes(':')) {
-        return `/*${propertyName}*/`
+const cleanTernaryOperation = (propValue) => {
+    if (propValue?.includes('?') && propValue?.includes(':')) {
+        return `/*${propValue}*/`
     }
-    return name
+    return propValue
 }
 
-const cleanImageVariablesSrc = (name) => {
-    if (propTemp.includes('url') && propTemp.includes('$')) {
-        return `/*${propTemp}*/`
+const cleanImageVariablesSrc = (propValue) => {
+    if (propValue?.includes('url') && propValue?.includes('$')) {
+        return `/*${propValue}*/`
     }
-    return name
+    return propValue
 }
 
 const extractSxStylesFromfile = (path, inputTsx) => {
@@ -72,127 +74,133 @@ const extractSxStylesFromfile = (path, inputTsx) => {
     const elementNameOnly = toLcName(inputTsx).split('.')[0]
 
     const responsiveBreakPoints = []
+    if (Array.isArray(sxSections)) {
+        for (let sx of sxSections) {
+            const elementCssClassName = `${elementNameOnly}-element-${idx}`
+            let currentSx = sx
+            const arrays = currentSx.match(matchArrays)
 
-    for (let sx of sxSections) {
-        const elementCssClassName = `${elementNameOnly}-element-${idx}`
-        let currentSx = sx
-        const arrays = currentSx.match(matchArrays)
+            if (arrays) {
+                for (let a of arrays) {
+                    const valuePrint = a.split(':')[1]
 
-        if (arrays) {
-            for (let a of arrays) {
-                const valuePrint = a.split(':')[1]
+                    const cleannedArray = a
+                        .replace(/\r*\n*/gm, '')
+                        .replace(/\[/gm, '')
+                        .replace(/\]/gm, '')
+                        .replace(/\'/gm, '')
+                        .replace(/\"/gm, '')
 
-                const cleannedArray = a
-                    .replace(/\r*\n*/gm, '')
-                    .replace(/\[/gm, '')
-                    .replace(/\]/gm, '')
-                    .replace(/\'/gm, '')
-                    .replace(/\"/gm, '')
+                    const propertyParts = getPropertyParts(cleannedArray)
 
-                const propertyParts = getPropertyParts(cleannedArray)
+                    const propertyBreakPointsValues =
+                        propertyParts[1].split(',')
 
-                const propertyBreakPointsValues = propertyParts[1].split(',')
+                    let propertyName = getPropertyName(propertyParts)
 
-                currentSx = currentSx.replace(
-                    valuePrint,
-                    propertyBreakPointsValues[0]
-                )
+                    propertyName = uncomment(propertyName)
+                    propertyName = cleanSpreadedObject(propertyName)
+                    propertyName = dashingCase(propertyName)
 
-                let propertyName = getPropertyName(propertyParts)
+                    let propertValue = getPropertyValue(propertyParts, 1)
 
-                propertyName = uncomment(propertyName)
-                propertyName = cleanSpreadedObject(propertyName)
-                propertyName = dashingCase(propertyName)
+                    propertValue = cleanOneParenthesised(propertValue)
+                    propertValue = cleanTernaryOperation(propertValue)
+                    propertValue = getMissingProperty(propertValue)
 
-                let propertValue = getPropertyValue(
-                    propertyBreakPointsValues,
-                    i
-                )
-                propertValue = cleanOneParenthesised(propertValue)
-                propertValue = cleanTernaryOperation(propertValue)
-                propertValue = getMissingProperty(propertValue)
+                    propertValue = cleanSpreadedObject(propertValue)
 
-                propertValue = cleanSpreadedObject(propertValue)
+                    currentSx = currentSx.replace(valuePrint, propertValue)
 
-                const outputProperty = `${propertyName}:${propertValue}${
-                    !propertValue.includes(';') ? ';' : ''
-                }`
+                    for (let i = 1; i < propertyBreakPointsValues.length; i++) {
+                        let propertValue = getPropertyValue(
+                            propertyBreakPointsValues,
+                            i
+                        )
+                        propertValue = cleanOneParenthesised(propertValue)
+                        propertValue = cleanTernaryOperation(propertValue)
+                        propertValue = getMissingProperty(propertValue)
 
-                console.log(propertyName, propertValue)
+                        propertValue = cleanSpreadedObject(propertValue)
 
-                for (let i = 1; i < propertyBreakPointsValues.length; i++) {
-                    responsiveBreakPoints.push({
-                        belongsTo: elementCssClassName,
-                        propertyName: propertyName,
-                        propertyValue: propertValue,
-                        propertyFull: outputProperty,
-                        breakPoint: `${i}00`,
-                    })
+                        const outputProperty = `${propertyName}:${propertValue}${
+                            !propertValue.includes(';') ? ';' : ''
+                        }`
+
+                        responsiveBreakPoints.push({
+                            belongsTo: elementCssClassName,
+                            propertyName: propertyName,
+                            propertyValue: propertValue,
+                            propertyFull: outputProperty,
+                            breakPoint: `${i}00`,
+                        })
+                    }
                 }
             }
-        }
 
-        let flatten = currentSx
-            .replace(
-                /\s[style|sx|sxStyle|sxContainerStyle|sxFrame|sxSlideBoxStyle|sxImgStyle]*={{/gm,
-                ''
-            )
-            .replace(/\r*\n*/gm, '')
-            .replace('}}', '')
-            .replace(/'/gm, '')
-            .replace(/"/gm, '')
+            let flatten = currentSx
+                .replace(
+                    /\s[style|sx|sxStyle|sxContainerStyle|sxFrame|sxSlideBoxStyle|sxImgStyle]*={{/gm,
+                    ''
+                )
+                .replace(/\r*\n*/gm, '')
+                .replace('}}', '')
+                .replace(/'/gm, '')
+                .replace(/"/gm, '')
 
-        flatten = dashingCase(flatten)
+            flatten = dashingCase(flatten)
 
-        const splittedProperties = flatten
-            .split(',')
-            .filter((o) => o !== '')
-            .map((o) => o.trim())
+            const splittedProperties = flatten
+                .split(',')
+                .map((o) => o.trim())
+                .filter((o) => o)
 
-        const outSplittedProperties = []
-        for (let property of splittedProperties) {
-            let propTemp = property.trim()
+            const outSplittedProperties = []
+            for (let property of splittedProperties) {
+                let propTemp = property.trim()
 
-            if (!propTemp) {
-                continue
+                if (!propTemp) {
+                    continue
+                }
+                const parts = getPropertyParts(propTemp)
+                let pName = getPropertyName(parts)
+                let pValue = getPropertyValue(parts)
+
+                pName = uncomment(pName)
+                pName = cleanSpreadedObject(pName)
+                pName = cleanOneParenthesised(pName)
+                pName = cleanTernaryOperation(pName)
+                pName = cleanImageVariablesSrc(pName)
+
+                pValue = uncomment(pValue)
+                pValue = cleanSpreadedObject(pValue)
+                pValue = cleanOneParenthesised(pValue)
+                pValue = cleanTernaryOperation(pValue)
+                pValue = cleanImageVariablesSrc(pValue)
+
+                propTemp = `${pName}:${pValue}`
+
+                if (propTemp.length > 1 && !propTemp.endsWith(';')) {
+                    propTemp = `${propTemp};`
+                }
+
+                outSplittedProperties.push(propTemp)
             }
-            const parts = getPropertyParts(propTemp)
-            let pName = getPropertyName(parts)
-            let pValue = getPropertyValue(parts)
 
-            pName = uncomment(pName)
-            pName = cleanSpreadedObject(pName)
-            pName = cleanOneParenthesised(pName)
-            pName = cleanTernaryOperation(pName)
-            pName = cleanImageVariablesSrc(pName)
-
-            pValue = uncomment(pValue)
-            pValue = cleanSpreadedObject(pValue)
-            pValue = cleanOneParenthesised(pValue)
-            pValue = cleanTernaryOperation(pValue)
-            pValue = cleanImageVariablesSrc(pValue)
-
-            propTemp = `${pName}:${pValue}`
-
-            if (propTemp.length > 1 && !propTemp.endsWith(';')) {
-                propTemp = `${propTemp};`
+            const reTemp = {
+                originalPrint: sx,
+                cssVersion: `${outSplittedProperties.join('\r\n')}`,
+                cssName: elementCssClassName,
             }
 
-            outSplittedProperties.push(propTemp)
+            templateReplacers.push(reTemp)
+
+            content = content.replace(sx, ` className='${reTemp.cssName}'`)
+            idx++
         }
-
-        const reTemp = {
-            originalPrint: sx,
-            cssVersion: `${outSplittedProperties.join('\r\n')}`,
-            cssName: elementCssClassName,
-        }
-
-        templateReplacers.push(reTemp)
-
-        content = content.replace(sx, ` className='${reTemp.cssName}'`)
-        idx++
+    } else {
+        console.log('No Array', sxSections)
     }
-
     return { content, responsiveBreakPoints, templateReplacers, result: true }
 }
 
@@ -203,7 +211,6 @@ const sxToCss = async (path, inputTsx, configPrettier) => {
     if (!result) return
 
     const fileNameAndExtention = inputTsx.split('.')
-
     const destFolderName = `${path}\\${fileNameAndExtention[0]}`
     const destComponentFullName = `${path}\\${fileNameAndExtention[0]}\\${fileNameAndExtention[0]}.${fileNameAndExtention[1]}`
     const destStyleFullName = `${path}\\${fileNameAndExtention[0]}\\${fileNameAndExtention[0]}.css`
