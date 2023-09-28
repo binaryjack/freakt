@@ -8,7 +8,7 @@ import settings from '../src/settings.js'
 import createFunctionalComponent from '../src/methodNewComponent.js'
 import createFunctionalComponentFromInterface from '../src/methodNewComponentFromInterface.js'
 import sxToCss from '../src/methodSxToCss.js'
-import fullSxToCss from '../src/methodFullSxToCss.js'
+import fullSxToCss, { cleanupEmptyFolders } from '../src/methodFullSxToCss.js'
 
 import * as prettier from 'prettier'
 
@@ -121,5 +121,9 @@ figlet(coms.applicationTitle, 'Standard', function (err, title) {
 
     if (argv.p === 'fullSxToCss' || argv.process === 'fullSxToCss') {
         fullSxToCss(currentExecturingDir, configFile)
+    }
+
+    if (argv.p === 'clean' || argv.process === 'clean') {
+        cleanupEmptyFolders(currentExecturingDir)
     }
 })

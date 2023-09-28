@@ -7,6 +7,7 @@ import {
     matchSx,
     matchTags,
     matchArrays,
+    matchRowRule,
 } from './patterns.js'
 import * as prettier from 'prettier'
 
@@ -14,10 +15,32 @@ const getPropertyParts = (propValue) =>
     propValue.split(':').map((o) => o?.trim())
 
 const getPropertyName = (propValue) =>
-    propValue && propValue.length > 0 ? propValue[0]?.trim() : ''
+    propValue && propValue.length > 0
+        ? propValue[0]?.trim().replace(/'/gm, '')
+        : ''
 
-const getPropertyValue = (propValue, idx = 1) =>
-    propValue && propValue.length > 0 ? propValue[idx]?.trim() : ''
+const getPropertyValue = (propValue) => {
+    if (!propValue) return propValue
+    const output = []
+    for (let i = 1; i < propValue.length; i++) {
+        output.push(propValue[i]?.trim().replace(/'/gm, ''))
+    }
+    return output.join(' ').trim()
+}
+
+const removeLastComma = (propValue) => {
+    if (propValue?.endsWith(',')) {
+        return propValue.substring(0, propValue.length - 1).trim()
+    }
+    return propValue
+}
+
+const removeLastClosingCurlyBraces = (propValue) => {
+    if (propValue?.endsWith('}}')) {
+        return propValue.substring(0, propValue.length - 2).trim()
+    }
+    return propValue
+}
 
 const getMissingProperty = (propValue) =>
     !propValue ? 'MISSING_VALUE' : propValue
@@ -25,16 +48,24 @@ const getMissingProperty = (propValue) =>
 const dashingCase = (propValue) =>
     propValue?.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase())
 
-const uncomment = (propValue) => {
-    if (propValue?.startsWith('//')) {
-        return propValue.replace(/\/{2}/, '')
+const parseCommented = (name, value) => {
+    if (name?.startsWith('//')) {
+        return `/*${name}: ${value}  TODO: PROVIDE VALUE*/`
     }
-    return propValue
+    return name
+}
+
+const getCssPeropertyWellFormed = (name, value) => {
+    let propTemp = `${name}:${value}`
+    if (propTemp.length > 1 && !propTemp.endsWith(';')) {
+        propTemp = `${propTemp};`
+    }
+    return propTemp
 }
 
 const cleanSpreadedObject = (propValue) => {
     if (propValue?.startsWith('...')) {
-        return `/*${propValue}*/`
+        return `none /*${propValue}  TODO: PROVIDE VALUE*/`
     }
     return propValue
 }
@@ -47,15 +78,25 @@ const cleanOneParenthesised = (propValue) => {
 }
 
 const cleanTernaryOperation = (propValue) => {
-    if (propValue?.includes('?') && propValue?.includes(':')) {
-        return `/*${propValue}*/`
+    if (propValue?.includes('?')) {
+        return `none /*${propValue}  TODO: PROVIDE VALUE*/`
     }
     return propValue
 }
 
 const cleanImageVariablesSrc = (propValue) => {
     if (propValue?.includes('url') && propValue?.includes('$')) {
-        return `/*${propValue}*/`
+        return `none /*${propValue}  TODO: PROVIDE VALUE*/`
+    }
+    return propValue
+}
+
+const extractArrayFromValue = (propValue) => {
+    if (propValue.startsWith('[') && propValue.endsWith(']')) {
+        return propValue
+            .replace(/\[*\]*/gm, '')
+            .split(',')
+            .map((o) => o.trim())
     }
     return propValue
 }
@@ -80,109 +121,66 @@ const extractSxStylesFromfile = (path, inputTsx) => {
             let currentSx = sx
             const arrays = currentSx.match(matchArrays)
 
-            if (arrays) {
-                for (let a of arrays) {
-                    const valuePrint = a.split(':')[1]
+            const properties = sx.match(matchRowRule)
 
-                    const cleannedArray = a
-                        .replace(/\r*\n*/gm, '')
-                        .replace(/\[/gm, '')
-                        .replace(/\]/gm, '')
-                        .replace(/\'/gm, '')
-                        .replace(/\"/gm, '')
+            const outSplittedProperties = []
+            for (let property of properties) {
+                let propTemp = property.trim()
 
-                    const propertyParts = getPropertyParts(cleannedArray)
+                //
+                if (!propTemp) {
+                    continue
+                }
 
-                    const propertyBreakPointsValues =
-                        propertyParts[1].split(',')
+                //
+                const parts = getPropertyParts(propTemp)
+                let pName = getPropertyName(parts)
+                let pValue = getPropertyValue(parts)
+                pValue = removeLastComma(pValue)
+                pValue = removeLastClosingCurlyBraces(pValue)
 
-                    let propertyName = getPropertyName(propertyParts)
+                //
+                if (pName.startsWith('//')) {
+                    propTemp = parseCommented(pName, pValue)
+                    outSplittedProperties.push(propTemp)
+                    continue
+                }
 
-                    propertyName = uncomment(propertyName)
-                    propertyName = cleanSpreadedObject(propertyName)
-                    propertyName = dashingCase(propertyName)
+                //..
+                pName = dashingCase(pName)
 
-                    let propertValue = getPropertyValue(propertyParts, 1)
+                if (pValue.startsWith('[') && pValue.endsWith(']')) {
+                    const vArray = extractArrayFromValue(pValue)
+                    console.log(vArray)
 
-                    propertValue = cleanOneParenthesised(propertValue)
-                    propertValue = cleanTernaryOperation(propertValue)
-                    propertValue = getMissingProperty(propertValue)
+                    pValue = vArray.pop()
 
-                    propertValue = cleanSpreadedObject(propertValue)
-
-                    currentSx = currentSx.replace(valuePrint, propertValue)
-
-                    for (let i = 1; i < propertyBreakPointsValues.length; i++) {
-                        let propertValue = getPropertyValue(
-                            propertyBreakPointsValues,
-                            i
-                        )
-                        propertValue = cleanOneParenthesised(propertValue)
-                        propertValue = cleanTernaryOperation(propertValue)
-                        propertValue = getMissingProperty(propertValue)
-
-                        propertValue = cleanSpreadedObject(propertValue)
-
-                        const outputProperty = `${propertyName}:${propertValue}${
-                            !propertValue.includes(';') ? ';' : ''
-                        }`
+                    for (let i = 0; i < vArray.length; i++) {
+                        let tmpValue = vArray[i]
+                        tmpValue = cleanOneParenthesised(tmpValue)
+                        tmpValue = cleanTernaryOperation(tmpValue)
+                        tmpValue = getMissingProperty(tmpValue)
+                        tmpValue = cleanSpreadedObject(tmpValue)
 
                         responsiveBreakPoints.push({
                             belongsTo: elementCssClassName,
-                            propertyName: propertyName,
-                            propertyValue: propertValue,
-                            propertyFull: outputProperty,
+                            propertyName: pName,
+                            propertyValue: tmpValue,
+                            propertyFull: getCssPeropertyWellFormed(
+                                pName,
+                                tmpValue
+                            ),
                             breakPoint: `${i}00`,
                         })
                     }
                 }
-            }
 
-            let flatten = currentSx
-                .replace(
-                    /\s[style|sx|sxStyle|sxContainerStyle|sxFrame|sxSlideBoxStyle|sxImgStyle]*={{/gm,
-                    ''
-                )
-                .replace(/\r*\n*/gm, '')
-                .replace('}}', '')
-                .replace(/'/gm, '')
-                .replace(/"/gm, '')
-
-            flatten = dashingCase(flatten)
-
-            const splittedProperties = flatten
-                .split(',')
-                .map((o) => o.trim())
-                .filter((o) => o)
-
-            const outSplittedProperties = []
-            for (let property of splittedProperties) {
-                let propTemp = property.trim()
-
-                if (!propTemp) {
-                    continue
-                }
-                const parts = getPropertyParts(propTemp)
-                let pName = getPropertyName(parts)
-                let pValue = getPropertyValue(parts)
-
-                pName = uncomment(pName)
-                pName = cleanSpreadedObject(pName)
-                pName = cleanOneParenthesised(pName)
-                pName = cleanTernaryOperation(pName)
-                pName = cleanImageVariablesSrc(pName)
-
-                pValue = uncomment(pValue)
                 pValue = cleanSpreadedObject(pValue)
                 pValue = cleanOneParenthesised(pValue)
                 pValue = cleanTernaryOperation(pValue)
                 pValue = cleanImageVariablesSrc(pValue)
 
-                propTemp = `${pName}:${pValue}`
-
-                if (propTemp.length > 1 && !propTemp.endsWith(';')) {
-                    propTemp = `${propTemp};`
-                }
+                propTemp = getCssPeropertyWellFormed(pName, pValue)
 
                 outSplittedProperties.push(propTemp)
             }
