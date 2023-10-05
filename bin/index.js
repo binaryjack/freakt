@@ -9,6 +9,7 @@ import createFunctionalComponent from '../src/methodNewComponent.js'
 import createFunctionalComponentFromInterface from '../src/methodNewComponentFromInterface.js'
 import sxToCss from '../src/methodSxToCss.js'
 import fullSxToCss, { cleanupEmptyFolders } from '../src/methodFullSxToCss.js'
+import { parseTeomplate } from '../src/parseTemplates.js'
 
 import * as prettier from 'prettier'
 
@@ -125,5 +126,21 @@ figlet(coms.applicationTitle, 'Standard', function (err, title) {
 
     if (argv.p === 'clean' || argv.process === 'clean') {
         cleanupEmptyFolders(currentExecturingDir)
+    }
+
+    if (argv.p === 'spli' || argv.process === 'spli') {
+        const fileName = argv.n || argv.name
+        if (!fileName) {
+            console.error('please provide a file name')
+            return
+        }
+
+        const outputDir = argv.i || argv.interfaceName
+        if (!outputDir) {
+            console.error('please provide outputDir')
+            return
+        }
+
+        parseTeomplate(currentExecturingDir, fileName, outputDir)
     }
 })
