@@ -59,6 +59,7 @@ export const parseTeomplate = async (root, fileName, outputDir) => {
             }
 
             const outputfunctionNames = []
+            const outputFilesNames = []
 
             for (let t of templatesResult) {
                 try {
@@ -88,6 +89,7 @@ export const parseTeomplate = async (root, fileName, outputDir) => {
                     fs.writeFileSync(outputFileFullName, newTStr, 'utf-8')
 
                     outputfunctionNames.push(toCMName)
+                    outputFilesNames.push(toPCName)
                 } catch (e) {
                     console.log(e)
                 }
@@ -96,11 +98,13 @@ export const parseTeomplate = async (root, fileName, outputDir) => {
             const outputMainTemplateFileData = `import { newDividerTemplate, SvgDividerTemplate } from './dividers'
             
           ${outputfunctionNames.map((o) => {
-              return `import { ${o} } from './${outputDir}/${o}'\r\n`
+              return `import { ${toCamelCaseName(
+                  o
+              )} } from './${outputDir}/${toPascalCaseName(o)}'\r\n`
           })}
           
             export const dividersTemplates: SvgDividerTemplate[] = [${outputfunctionNames.join(
-                '(),\r\n'
+                '\r\n'
             )}]`
 
             if (fs.existsSync(filteTemplateFullName)) {
