@@ -2,15 +2,16 @@ export const jsxModel = (name, nameLc, interfaceProps, destructuredList) => `
 import React from 'react'
 import './${name}.css'
 
-interface I${name} {
+interface I${name}Props {
     ${interfaceProps}
 } 
 
 const ${name} = ({
     ${destructuredList}
-    }: I${name}): React.JSX.Element => {
+    }: I${name}Props): React.JSX.Element => {
     return (
         <div className={\`${nameLc}\`}>
+        // your component here
         </div>
     )
 }
